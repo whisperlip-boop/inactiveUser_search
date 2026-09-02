@@ -7,19 +7,19 @@
 퇴사자 계정을 비활성화하면 그 사람이 남긴 이슈를 인수인계 받은 사람이 찾지 못한다. 기록을 남기는
 이유가 나중에 찾기 위해서인데 정작 검색이 안 된다.
 
-핵심은 **자동완성**이다. 사용자는 전임자의 영문 계정명(`hong.gildong`)까지 기억하지 못한다. 보통
+핵심은 **자동완성**이다. 사용자는 전임자의 영문 계정명(`gildong.hong`)까지 기억하지 못한다. 보통
 한글 이름 일부를 치고 드롭다운에서 고르는데, Jira의 값 제안은 활성 사용자만 내놓는다. 관리자라면
 사용자 관리 화면에서 계정명을 찾아낼 수 있지만 일반 사용자는 그 사람을 **지목할 방법 자체가 없다.**
 
-Jira 8.13 실측 (`퇴사자 / inactive`, 계정명 `jung.kim`, 비활성):
+Jira 8.13 실측 (`홍길동 / gildong.hong`, 계정명 `gildong.hong`, 비활성):
 
 | 검색 방법 | 설치 전 | 설치 후 |
 |---|---|---|
-| 자동완성에 `jung` 입력 | 제안 0건 | **제안됨** |
+| 자동완성에 `gildong` 입력 | 제안 0건 | **제안됨** |
 | 자동완성에 `퇴사` 입력 (한글 이름) | 제안 0건 | **제안됨** |
-| 자동완성에 정확한 계정명 `jung.kim` 입력 | **제안 0건** | **제안됨** |
-| `reporter = "jung.kim"` | 1건 (되긴 함) | 1건 |
-| `reporter = "퇴사자"` (표시이름) | 0건 + 경고 | `inactiveUser()`로 1건 |
+| 자동완성에 정확한 계정명 `gildong.hong` 입력 | **제안 0건** | **제안됨** |
+| `reporter = "gildong.hong"` | 1건 (되긴 함) | 1건 |
+| `reporter = "홍길동"` (표시이름) | 0건 + 경고 | `inactiveUser()`로 1건 |
 
 정확한 계정명을 다 쳐도 자동완성이 0건인 게 문제의 본질이다. 검색 자체는 되는데 아무도 그 값을
 알아낼 수 없다.
@@ -32,7 +32,7 @@ JQL 편집기가 호출하는 값 제안 응답에 비활성 사용자를 덧붙
 쓰던 방식 그대로, 이름 일부만 쳐도 퇴사자가 목록에 뜨고 고르면 된다.
 
 ```
-reporter = 퇴사          →  퇴사자 / inactive - inactive@example.com  (jung.kim) [비활성]
+reporter = 퇴사          →  홍길동 / gildong.hong - gildong.hong@example.com  (gildong.hong) [비활성]
 reporter = 사자          →  단어 중간 일치도 된다 (Jira 기본 검색은 활성 사용자에게도 못 하는 것)
 reporter = nact          →  영문 이름·이메일 중간 일치
 ```
@@ -45,15 +45,15 @@ reporter = nact          →  영문 이름·이메일 중간 일치
 ### 2. JQL 함수 (한 번에 여러 명, 퇴사자 전원 조회)
 
 ```jql
-reporter in inactiveUser("jung.kim")              -- 사용자명
-reporter in inactiveUser("퇴사자")                 -- 표시이름 일부
-reporter in inactiveUser("inactive@example.com")      -- 이메일
+reporter in inactiveUser("gildong.hong")              -- 사용자명
+reporter in inactiveUser("홍길동")                 -- 표시이름 일부
+reporter in inactiveUser("gildong.hong@example.com")      -- 이메일
 reporter in inactiveUser("JIRAUSER10100")         -- 사용자 키
-reporter in inactiveUser("퇴사자", "jung")         -- 여러 명 한 번에
+reporter in inactiveUser("홍길동", "dong")         -- 여러 명 한 번에
 reporter in inactiveUser()                        -- 퇴사자 전원
-reporter in anyUser("jung")                       -- 계정 상태 무관
+reporter in anyUser("dong")                       -- 계정 상태 무관
 
-assignee in inactiveUser("퇴사자")                 -- reporter 말고 다른 사용자 필드도 동일
+assignee in inactiveUser("홍길동")                 -- reporter 말고 다른 사용자 필드도 동일
 ```
 
 `reporter`·`assignee`·`creator`는 물론 **사용자 타입 커스텀 필드**에도 쓸 수 있다(절 이름을 필드로
@@ -78,13 +78,13 @@ assignee in inactiveUser("퇴사자")                 -- reporter 말고 다른 
 함수와 자동완성이 실제로 누구를 집어내는지 볼 수 있다.
 
 ```bash
-curl -u <id>:<pw> 'http://<jira>/rest/inactive-user-search/1.0/lookup?q=퇴사자&mode=inactive'
+curl -u <id>:<pw> 'http://<jira>/rest/inactive-user-search/1.0/lookup?q=홍길동&mode=inactive'
 ```
 
 ```json
-[{"username":"jung.kim","key":"JIRAUSER10100","displayName":"퇴사자 / inactive",
-  "emailAddress":"inactive@example.com","active":false,"existsInDirectory":true,
-  "jqlValue":"\"jung.kim\""}]
+[{"username":"gildong.hong","key":"JIRAUSER10100","displayName":"홍길동 / gildong.hong",
+  "emailAddress":"gildong.hong@example.com","active":false,"existsInDirectory":true,
+  "jqlValue":"\"gildong.hong\""}]
 ```
 
 `mode`는 `inactive`(기본) 또는 `any`. 로그인한 사용자만 호출할 수 있다.
