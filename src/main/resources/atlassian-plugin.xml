@@ -1,0 +1,55 @@
+<atlassian-plugin key="${atlassian.plugin.key}" name="${project.name}" plugins-version="2">
+    <plugin-info>
+        <description>${project.description}</description>
+        <version>${project.version}</version>
+        <vendor name="${project.organization.name}" url="${project.organization.url}" />
+        <!-- UPM은 SVG를 주면 0바이트를 서빙한다(실측). 반드시 래스터 이미지여야 한다. -->
+        <param name="plugin-icon">images/inactive_search.png</param>
+        <param name="plugin-logo">images/inactive_search.png</param>
+    </plugin-info>
+
+    <resource type="i18n" name="i18n" location="inactive-user-search"/>
+
+    <!-- reporter in inactiveUser("jung.kim") : 퇴사(비활성·삭제) 계정만
+
+         fname/list는 반드시 **자식 엘리먼트**여야 한다. 속성으로 쓰면 모듈은 정상적으로 enabled로
+         뜨는데 함수명이 null이라 JQL에서 "Unable to find JQL function"이 난다 —
+         JqlFunctionModuleDescriptorImpl.init()이 element.element("fname")으로 읽기 때문. -->
+    <jql-function key="inactive-user-function"
+                  name="Inactive User Function"
+                  i18n-name-key="inactiveuser.function.inactiveuser.name"
+                  class="co.bskim.jira.inactiveuser.jql.InactiveUserFunction">
+        <description key="inactiveuser.function.inactiveuser.desc"/>
+        <fname>inactiveUser</fname>
+        <list>true</list>
+    </jql-function>
+
+    <!-- reporter in anyUser("jung.kim") : 계정 상태를 가리지 않고 전부 -->
+    <jql-function key="any-user-function"
+                  name="Any User Function"
+                  i18n-name-key="inactiveuser.function.anyuser.name"
+                  class="co.bskim.jira.inactiveuser.jql.AnyUserFunction">
+        <description key="inactiveuser.function.anyuser.desc"/>
+        <fname>anyUser</fname>
+        <list>true</list>
+    </jql-function>
+
+    <!-- JQL 편집기의 값 자동완성에 퇴사자를 덧붙인다. 이 플러그인의 핵심 기능.
+         url-pattern은 넉넉히 잡고 실제 대상 판별은 필터 안에서 한다 — 플러그인 서블릿 필터의
+         패턴 매칭이 서블릿 스펙과 미묘하게 달라서, 경로를 정확히 박아두면 조용히 안 걸릴 위험이 있다.
+         대상이 아닌 요청은 즉시 통과시키므로 비용은 문자열 비교 한 번이다. -->
+    <servlet-filter name="Inactive User Suggestion Filter"
+                    key="inactive-user-suggestion-filter"
+                    class="co.bskim.jira.inactiveuser.web.InactiveUserSuggestionFilter"
+                    location="after-encoding"
+                    weight="100">
+        <description>JQL 값 자동완성 응답에 비활성 사용자를 추가한다.</description>
+        <url-pattern>/rest/api/*</url-pattern>
+    </servlet-filter>
+
+    <!-- 함수가 실제로 누구를 집어내는지 확인하는 보조 API -->
+    <rest key="inactive-user-search-rest" path="/inactive-user-search" version="1.0">
+        <description>inactive-user-search REST resources</description>
+    </rest>
+
+</atlassian-plugin>

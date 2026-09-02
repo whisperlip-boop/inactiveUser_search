@@ -1,0 +1,5 @@
+target/
+.idea/
+*.iml
+amps-standalone/
+atlassian-ide-plugin.xml
